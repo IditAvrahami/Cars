@@ -1,0 +1,33 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    background: rebeccapurple;
+    color: white;
+    font-family: Helvetica;
+    font-weight: 300;
+    padding-right: 10px;
+  }
+  
+  .navbar__title {
+    margin-right: auto;
+    font-size: 150%;
+    padding: 12px 16px;
+  }
+  
+  .navbar__item {
+    padding: 16px 16px;
+    cursor: pointer;
+    vertical-align: middle;
+    min-width: 100px;
+    text-align: center;
+  }
+  
+  .navbar__item.active{
+    background: #00000069;
+    border-radius: 10px;
+  }
+
+  .App-intro{
+    display: flex;
+    flex-direction: column;
+  }
