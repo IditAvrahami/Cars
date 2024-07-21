@@ -71,5 +71,41 @@
   
   .form-container input {
     margin-bottom: 10px;
-    padding:
-  }  
+    padding: 0
+  }
+  /* src/CsvReader.css */
+.icon-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+  
+  .add-car-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .Modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    outline: none;
+  }
+  
+  .Overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+  }
+  

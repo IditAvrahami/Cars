@@ -1,24 +1,19 @@
+// src/CsvReader.js
 import React, { useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { useTable, useSortBy } from 'react-table';
-import BestModels from './BestModels'; // Import the new component
+import { FaPlusCircle } from 'react-icons/fa';
+import AddCarModal from './AddCarModal';
+import BestModels from './BestModels';
 import './CsvReader.css';
 
-// Function to get the first word from a car name
-const getFirstWord = (carName) => {
-  return carName ? carName.split(' ')[0] : '';
-};
-
-const removeFirstWord = (str) => {
-    if (!str) return ''; // Return an empty string if input is null or undefined
-    const words = str.split(' ');
-    return words.slice(1).join(' ');
-  };
-  
+const getFirstWord = (carName) => carName ? carName.split(' ')[0] : '';
+const removeFirstWord = (str) => str ? str.split(' ').slice(1).join(' ') : '';
 
 const CsvReader = () => {
   const [data, setData] = useState([]);
   const [sortBy, setSortBy] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCar, setNewCar] = useState({
     Battery: '',
     Car_name: '',
@@ -30,32 +25,84 @@ const CsvReader = () => {
     Top_speed: '',
     acceleration: '',
   });
+  const [stateOptions, setStateOptions] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [electricityData, setElectricityData] = useState({});
 
   useEffect(() => {
-    fetch('/EV_cars_exel.xlsx')
-      .then(response => response.arrayBuffer())
-      .then(buffer => {
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
-        const processedData = worksheet.map(row => ({
-          ...row,
-          FirstWord: getFirstWord(row.Car_name) // Add first word to data
-        }));
-        setData(processedData);
-      })
-      .catch(error => {
-        console.error('Error fetching and parsing Excel file:', error);
-      });
-  }, []);
+    const fetchData = async () => {
+      try {
+        // Fetch and process car data
+        const carResponse = await fetch('/EV_cars_exel.xlsx');
+        const carBuffer = await carResponse.arrayBuffer();
+        const carWorkbook = XLSX.read(carBuffer, { type: 'array' });
+        const carWorksheet = XLSX.utils.sheet_to_json(carWorkbook.Sheets[carWorkbook.SheetNames[0]]);
 
-////////////////////////////////////////////////////////////////////////////////////////////
-const columns = useMemo(
+        // Fetch and process electricity data
+        const electricityResponse = await fetch('/electricity.xlsx');
+        const electricityBuffer = await electricityResponse.arrayBuffer();
+        const electricityWorkbook = XLSX.read(electricityBuffer, { type: 'array' });
+        const electricityWorksheet = XLSX.utils.sheet_to_json(electricityWorkbook.Sheets[electricityWorkbook.SheetNames[0]]);
+        
+        // Filter electricity data for residential sector and create a mapping
+        const residentialData = electricityWorksheet.filter(row => row.sectorName === 'residential');
+        const statePriceMap = {};
+        residentialData.forEach(row => {
+          if (row.stateDescription) {
+            statePriceMap[row.stateDescription] = row.price;
+          }
+        });
+
+        setElectricityData(statePriceMap);
+
+        // Process car data with exchange rate
+        const exchangeRateResponse = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+        const exchangeRateData = await exchangeRateResponse.json();
+        const exchangeRate = exchangeRateData.rates.ILS;
+
+        const processedData = carWorksheet.map(row => ({
+          ...row,
+          FirstWord: getFirstWord(row.Car_name),
+          PriceShekels: (row.Price ? parseFloat(row.Price) * exchangeRate : ''),
+          AnnualCost: selectedState && row.Price && row.Battery && row.Range 
+            ? (15000 * row.Range) / (row.Battery * (statePriceMap[selectedState] || 1)) 
+            : ''
+        }));
+
+        setData(processedData);
+        setStateOptions(Object.keys(statePriceMap));
+
+      } catch (error) {
+        console.error('Error fetching and parsing data:', error);
+      }
+    };
+
+    fetchData();
+  }, [selectedState]);
+
+  const columns = useMemo(
     () => [
-      { Header: 'Company', accessor: 'FirstWord' },
-      { Header: 'Car Name', accessor: 'Car_name' },
       {
-        Header: 'Link',
+        Header: '',
+        accessor: 'actions',
+        Cell: ({ row }) => (
+          <div>
+            <button onClick={() => handleDelete(row.index)}>Delete</button>
+          </div>
+        ),
+        disableSortBy: true
+      },
+      { Header: 'עלות שנתית ($)', accessor: 'AnnualCost' },
+      { Header: 'האצה (0-100)', accessor: 'acceleration' },
+      { Header: 'מהירות מקסימלית', accessor: 'Top_speed' },
+      { Header: 'טווח', accessor: 'Range' }, 
+      { Header: 'זמן טעינה', accessor: 'Fast_charge' },
+      { Header: 'יעילות', accessor: 'Efficiency' },
+      { Header: 'חיי סוללה', accessor: 'Battery' },
+      { Header: 'מחיר(בשקל)', accessor: 'PriceShekels' },
+      { Header: 'מחיר (אירו)', accessor: 'Price' },
+      {
+        Header: 'לינק',
         accessor: 'Car_name_link',
         Cell: ({ row }) => (
           <a href={row.original.Car_name_link} target="_blank" rel="noopener noreferrer">
@@ -63,70 +110,11 @@ const columns = useMemo(
           </a>
         )
       },
-      { Header: 'Price (EUR)', accessor: 'Price' },
-      { Header: 'Price (ILS)', accessor: 'PriceShekels' }, // New column for shekels
-      { Header: 'Battery', accessor: 'Battery' },
-      { Header: 'Efficiency', accessor: 'Efficiency' },
-      { Header: 'Fast Charge', accessor: 'Fast_charge' },  
-      { Header: 'Range', accessor: 'Range' },
-      { Header: 'Top Speed', accessor: 'Top_speed' },
-      { Header: 'Acceleration (0-100)', accessor: 'acceleration' },
-      {
-        Header: 'Actions',
-        accessor: 'actions',
-        Cell: ({ row }) => (
-          <div>
-            <button onClick={() => handleDelete(row.index)}>Delete</button>
-          </div>
-        ),
-        disableSortBy: true // Disable sorting for the Actions column
-      }
+      { Header: 'שם הרכב', accessor: 'Car_name' },
+      { Header: 'שם החברה', accessor: 'FirstWord' }
     ],
     [data]
   );
-
-  //Fetch the Exchange Rate,provides currency exchange rates.
-  const fetchExchangeRate = async () => {
-    try {
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
-      const data = await response.json();
-      return data.rates.ILS; // ILS is the currency code for Israeli Shekel
-    } catch (error) {
-      console.error('Error fetching exchange rate:', error);
-      return 0; // Return 0 if there's an error
-    }
-  };
-  // check if the change is working
-  //Convert Prices and Update State
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/EV_cars_exel.xlsx');
-        const buffer = await response.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
-  
-        const exchangeRate = await fetchExchangeRate(); // Get exchange rate
-  
-        const processedData = worksheet.map(row => ({
-          ...row,
-          FirstWord: getFirstWord(row.Car_name),
-          PriceShekels: (row.Price ? parseFloat(row.Price) * exchangeRate : '') // Convert price to shekels
-        }));
-  
-        setData(processedData);
-      } catch (error) {
-        console.error('Error fetching and parsing Excel file:', error);
-      }
-    };
-  
-    fetchData();
-  }, []);
-  
-
-
-////////////////////////////////////////////////////////////////////////////////////////////
 
   const tableInstance = useTable(
     { columns, data, initialState: { sortBy } },
@@ -158,6 +146,7 @@ const columns = useMemo(
       Top_speed: '',
       acceleration: '',
     });
+    setIsModalOpen(false);
   };
 
   const handleDelete = (index) => {
@@ -174,14 +163,30 @@ const columns = useMemo(
 
   const handleSortChange = (e) => {
     const column = e.target.value;
-    setSortBy([{ id: column, desc: false }]); // Apply ascending sort
-    setTableSortBy([{ id: column, desc: false }]); // Apply ascending sort in table
+    setSortBy([{ id: column, desc: false }]);
+    setTableSortBy([{ id: column, desc: false }]);
+  };
+
+  const handleStateChange = (e) => {
+    setSelectedState(e.target.value);
   };
 
   return (
     <div className="csv-reader">
       <h2>EV Cars Data</h2>
-      
+      <BestModels data={data} />
+      <div className="icon-container">
+        <button className="add-car-button" onClick={() => setIsModalOpen(true)}>
+          <FaPlusCircle size={30} />
+        </button>
+      </div>
+      <AddCarModal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        newCar={newCar}
+        handleChange={handleChange}
+        handleAdd={handleAdd}
+      />
       <div className="sort-dropdown">
         <label htmlFor="sort-by">Sort by:</label>
         <select id="sort-by" onChange={handleSortChange}>
@@ -195,7 +200,17 @@ const columns = useMemo(
             ))}
         </select>
       </div>
-
+      <div className="state-dropdown">
+        <label htmlFor="state-select">Select State:</label>
+        <select id="state-select" onChange={handleStateChange} value={selectedState}>
+          <option value="">Select State</option>
+          {stateOptions.map(state => (
+            <option key={state} value={state}>
+              {state}
+            </option>
+          ))}
+        </select>
+      </div>
       <table {...getTableProps()} className="data-table">
         <thead>
           {headerGroups.map(headerGroup => (
@@ -203,7 +218,6 @@ const columns = useMemo(
               {headerGroup.headers.map(column => (
                 <th {...column.getHeaderProps(column.getSortByToggleProps())}>
                   {column.render('Header')}
-                  {/* Show sort indicators for sortable columns */}
                   {!column.disableSortBy && (column.isSorted
                     ? column.isSortedDesc
                       ? ' 🔽'
@@ -227,78 +241,6 @@ const columns = useMemo(
           })}
         </tbody>
       </table>
-
-      <div className="form-container">
-        <h3>Add New Car</h3>
-        <form>
-          <input
-            type="text"
-            name="Battery"
-            value={newCar.Battery}
-            onChange={handleChange}
-            placeholder="Battery"
-          />
-          <input
-            type="text"
-            name="Car_name"
-            value={newCar.Car_name}
-            onChange={handleChange}
-            placeholder="Car Name"
-          />
-          <input
-            type="text"
-            name="Car_name_link"
-            value={newCar.Car_name_link}
-            onChange={handleChange}
-            placeholder="Car Name Link"
-          />
-          <input
-            type="text"
-            name="Efficiency"
-            value={newCar.Efficiency}
-            onChange={handleChange}
-            placeholder="Efficiency"
-          />
-          <input
-            type="text"
-            name="Fast_charge"
-            value={newCar.Fast_charge}
-            onChange={handleChange}
-            placeholder="Fast Charge"
-          />
-          <input
-            type="text"
-            name="Price"
-            value={newCar.Price}
-            onChange={handleChange}
-            placeholder="Price"
-          />
-          <input
-            type="text"
-            name="Range"
-            value={newCar.Range}
-            onChange={handleChange}
-            placeholder="Range"
-          />
-          <input
-            type="text"
-            name="Top_speed"
-            value={newCar.Top_speed}
-            onChange={handleChange}
-            placeholder="Top Speed"
-          />
-          <input
-            type="text"
-            name="acceleration"
-            value={newCar.acceleration}
-            onChange={handleChange}
-            placeholder="Acceleration (0-100)"
-          />
-          <button type="button" onClick={handleAdd}>
-            Add Car
-          </button>
-        </form>
-      </div>
     </div>
   );
 };

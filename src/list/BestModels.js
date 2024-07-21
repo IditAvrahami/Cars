@@ -1,7 +1,21 @@
 import React from 'react';
 
-const BestModels = ({ bestModels }) => {
-  if (!bestModels) return null;
+const getBestModels = (data) => {
+  if (data.length === 0) return {};
+
+  return {
+    fastest: data.reduce((prev, curr) => (prev.Top_speed > curr.Top_speed ? prev : curr), data[0]),
+    agile: data.reduce((prev, curr) => (prev.acceleration < curr.acceleration ? prev : curr), data[0]),
+    efficient: data.reduce((prev, curr) => (prev.Efficiency < curr.Efficiency ? prev : curr), data[0]), 
+    range: data.reduce((prev, curr) => (prev.Range > curr.Range ? prev : curr), data[0]),
+    battery: data.reduce((prev, curr) => (prev.Battery > curr.Battery ? prev : curr), data[0]),
+  };
+};
+
+const BestModels = ({ data }) => {
+  if (!data || data.length === 0) return null;
+
+  const bestModels = getBestModels(data);
 
   return (
     <div className="best-models">
