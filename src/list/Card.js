@@ -10,18 +10,18 @@ const Card = ({ data }) => {
       width: '200px',
       boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
     }}>
-      <div><strong>{data.Car_name.trim().split(' ')[0]}</strong></div>
+      {/* <div><strong>{data.Car_name.trim().split(' ')[0]}</strong></div>
       <a href={data.Car_name_link} target="_blank" rel="noopener noreferrer">{data.Car_name.trim().split(' ').slice(1).join(' ')}</a>
       {/* <div>מחיר: {data.['Price.DE.']}</div> */}
-      <div style={{ marginBottom: '8px' }}>
+      {/* <div style={{ marginBottom: '8px' }}>
           <strong>טווח: </strong>{data.Range}
-        </div>
+        </div> */} 
 
-      {/* {Object.keys(data).map((key, index) => (
+      {Object.keys(data).map((key, index) => (
         <div key={index} style={{ marginBottom: '8px' }}>
           <strong>{key}: </strong>{data[key]}
         </div>
-      ))} */}
+      ))}
     </div>
   );
 };

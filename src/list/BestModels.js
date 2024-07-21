@@ -1,4 +1,5 @@
 import React from 'react';
+import Card from './Card';
 
 const getBestModels = (data) => {
   if (data.length === 0) return {};
@@ -18,6 +19,7 @@ const BestModels = ({ data }) => {
   const bestModels = getBestModels(data);
 
   return (
+    // <Card data={data} />
     <div className="best-models">
       <h2>Best Models</h2>
       <div className="best-model">
