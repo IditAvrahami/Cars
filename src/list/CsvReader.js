@@ -173,7 +173,6 @@ const CsvReader = () => {
 
   return (
     <div className="csv-reader">
-      <h2>EV Cars Data</h2>
       <BestModels data={data} />
       <div className="icon-container">
         <button className="add-car-button" onClick={() => setIsModalOpen(true)}>
