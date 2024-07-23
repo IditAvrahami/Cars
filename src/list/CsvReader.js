@@ -1,11 +1,11 @@
-// src/CsvReader.js
+
 import React, { useState, useEffect, useMemo } from 'react';
-import * as XLSX from 'xlsx';
 import { useTable, useSortBy } from 'react-table';
-import { FaPlusCircle } from 'react-icons/fa';
-import AddCarModal from './AddCarModal';
-import BestModels from './BestModels';
 import './CsvReader.css';
+import AddCarModal from './AddCarModal';
+import { FaPlusCircle } from 'react-icons/fa';
+import BestModels from './BestModels';
+
 
 const getFirstWord = (carName) => carName ? carName.split(' ')[0] : '';
 const removeFirstWord = (str) => str ? str.split(' ').slice(1).join(' ') : '';
@@ -15,14 +15,14 @@ const CsvReader = () => {
   const [sortBy, setSortBy] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCar, setNewCar] = useState({
-    Battery: '',
-    Car_name: '',
-    Car_name_link: '',
-    Efficiency: '',
-    Fast_charge: '',
-    Price: '',
-    Range: '',
-    Top_speed: '',
+    battery: '',
+    car_name: '',
+    car_name_link: '',
+    efficiency: '',
+    fast_charge: '',
+    price: '',
+    range: '',
+    top_speed: '',
     acceleration: '',
   });
   const [stateOptions, setStateOptions] = useState([]);
@@ -30,22 +30,16 @@ const CsvReader = () => {
   const [electricityData, setElectricityData] = useState({});
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchElectricityData = async () => {
       try {
-        // Fetch and process car data
-        const carResponse = await fetch('/EV_cars_exel.xlsx');
-        const carBuffer = await carResponse.arrayBuffer();
-        const carWorkbook = XLSX.read(carBuffer, { type: 'array' });
-        const carWorksheet = XLSX.utils.sheet_to_json(carWorkbook.Sheets[carWorkbook.SheetNames[0]]);
-
-        // Fetch and process electricity data
-        const electricityResponse = await fetch('/electricity.xlsx');
-        const electricityBuffer = await electricityResponse.arrayBuffer();
-        const electricityWorkbook = XLSX.read(electricityBuffer, { type: 'array' });
-        const electricityWorksheet = XLSX.utils.sheet_to_json(electricityWorkbook.Sheets[electricityWorkbook.SheetNames[0]]);
+        const response = await fetch('http://localhost:5000/api/electricity-data');
+        if (!response.ok) {
+          throw new Error('Failed to fetch electricity data');
+        }
+        const data = await response.json();
         
         // Filter electricity data for residential sector and create a mapping
-        const residentialData = electricityWorksheet.filter(row => row.sectorName === 'residential');
+        const residentialData = data.filter(row => row.sectorName === 'residential');
         const statePriceMap = {};
         residentialData.forEach(row => {
           if (row.stateDescription) {
@@ -54,31 +48,48 @@ const CsvReader = () => {
         });
 
         setElectricityData(statePriceMap);
+        setStateOptions(Object.keys(statePriceMap));
+      } catch (error) {
+        console.error('Error fetching electricity data:', error);
+      }
+    };
 
-        // Process car data with exchange rate
+    fetchElectricityData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch car data from the API
+        const carResponse = await fetch('http://localhost:5000/api/cars');
+        if (!carResponse.ok) {
+          throw new Error('Failed to fetch car data');
+        }
+        const carData = await carResponse.json();
+        console.log('Car data:', carData); // Debugging line
+
+        // Fetch exchange rate
         const exchangeRateResponse = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
         const exchangeRateData = await exchangeRateResponse.json();
         const exchangeRate = exchangeRateData.rates.ILS;
 
-        const processedData = carWorksheet.map(row => ({
+        const processedData = carData.map(row => ({
           ...row,
-          FirstWord: getFirstWord(row.Car_name),
-          PriceShekels: (row.Price ? parseFloat(row.Price) * exchangeRate : ''),
-          AnnualCost: selectedState && row.Price && row.Battery && row.Range 
-            ? (15000 * row.Range) / (row.Battery * (statePriceMap[selectedState] || 1)) 
+          FirstWord: getFirstWord(row.car_name),
+          PriceShekels: (row.price ? parseFloat(row.price) * exchangeRate : ''),
+          AnnualCost: (selectedState && row.price && row.battery && row.range) 
+            ? (15000 * row.range) / (row.battery * (electricityData[selectedState] || 1)) 
             : ''
         }));
 
         setData(processedData);
-        setStateOptions(Object.keys(statePriceMap));
-
       } catch (error) {
         console.error('Error fetching and parsing data:', error);
       }
     };
 
     fetchData();
-  }, [selectedState]);
+  }, [selectedState, electricityData]);
 
   const columns = useMemo(
     () => [
@@ -87,31 +98,32 @@ const CsvReader = () => {
         accessor: 'actions',
         Cell: ({ row }) => (
           <div>
-            <button onClick={() => handleDelete(row.index)}>Delete</button>
+            <button onClick={() => handleDelete(row.original.id)}>מחיקה</button>
+            <button onClick={() => handleEdit(row.original)}>עריכה</button>
           </div>
         ),
         disableSortBy: true
       },
       { Header: 'עלות שנתית ($)', accessor: 'AnnualCost' },
-      { Header: 'האצה (0-100)', accessor: 'acceleration' },
-      { Header: 'מהירות מקסימלית', accessor: 'Top_speed' },
-      { Header: 'טווח', accessor: 'Range' }, 
-      { Header: 'זמן טעינה', accessor: 'Fast_charge' },
-      { Header: 'יעילות', accessor: 'Efficiency' },
-      { Header: 'חיי סוללה', accessor: 'Battery' },
-      { Header: 'מחיר(בשקל)', accessor: 'PriceShekels' },
-      { Header: 'מחיר (אירו)', accessor: 'Price' },
+      { Header: 'תאוצה (0-100)', accessor: 'acceleration' },
+      { Header: 'מהירות מקסימלית', accessor: 'top_speed' },
+      { Header: 'טווח', accessor: 'range' }, 
+      { Header: 'טעינה מהירה', accessor: 'fast_charge' },
+      { Header: 'יעילות', accessor: 'efficiency' },
+      { Header: 'חיי סוללה', accessor: 'battery' },
+      { Header: 'מחיר (בשקל)', accessor: 'PriceShekels' },
+      { Header: 'מחיר (אירו)', accessor: 'price' },
       {
-        Header: 'לינק',
-        accessor: 'Car_name_link',
+        Header: 'קישור',
+        accessor: 'car_name_link',
         Cell: ({ row }) => (
-          <a href={row.original.Car_name_link} target="_blank" rel="noopener noreferrer">
-            {removeFirstWord(row.original.Car_name)}
+          <a href={row.original.car_name_link} target="_blank" rel="noopener noreferrer">
+            {removeFirstWord(row.original.car_name)}
           </a>
         )
       },
-      { Header: 'שם הרכב', accessor: 'Car_name' },
-      { Header: 'שם החברה', accessor: 'FirstWord' }
+      { Header: 'סוג מכונית', accessor: 'car_name' },
+      { Header: 'חברה', accessor: 'FirstWord' }
     ],
     [data]
   );
@@ -130,29 +142,72 @@ const CsvReader = () => {
     setSortBy: setTableSortBy
   } = tableInstance;
 
-  const handleAdd = () => {
-    setData(prevData => [
-      ...prevData,
-      { ...newCar, FirstWord: getFirstWord(newCar.Car_name) }
-    ]);
-    setNewCar({
-      Battery: '',
-      Car_name: '',
-      Car_name_link: '',
-      Efficiency: '',
-      Fast_charge: '',
-      Price: '',
-      Range: '',
-      Top_speed: '',
-      acceleration: '',
-    });
-    setIsModalOpen(false);
+const handleAdd = async () => {
+    try {
+      const method = newCar.id ? 'PUT' : 'POST'; // Determine if it's an update or add
+      const url = newCar.id ? `http://localhost:5000/api/cars/${newCar.id}` : 'http://localhost:5000/api/cars';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newCar)
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to ${method === 'POST' ? 'add' : 'update'} car`);
+      }
+  
+      const updatedCar = await response.json();
+      setData(prevData => {
+        if (method === 'POST') {
+          return [...prevData, { ...updatedCar, FirstWord: getFirstWord(updatedCar.car_name) }];
+        } else {
+          return prevData.map(car => car.id === updatedCar.id ? updatedCar : car);
+        }
+      });
+  
+      setNewCar({
+        battery: '',
+        car_name: '',
+        car_name_link: '',
+        efficiency: '',
+        fast_charge: '',
+        price: '',
+        range: '',
+        top_speed: '',
+        acceleration: '',
+      });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(`Error ${newCar.id ? 'updating' : 'adding'} car:`, error);
+    }
+  };
+  
+
+const handleEdit = (car) => {
+    setNewCar(car);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = (index) => {
-    setData(prevData => prevData.filter((_, i) => i !== index));
-  };
 
+const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this car?')) return;
+  
+    try {
+      const response = await fetch(`http://localhost:5000/api/cars/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete car');
+      }
+      setData(prevData => prevData.filter(car => car.id !== id));
+    } catch (error) {
+      console.error('Error deleting car:', error);
+    }
+  };
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewCar(prevCar => ({
@@ -173,19 +228,8 @@ const CsvReader = () => {
 
   return (
     <div className="csv-reader">
-      <BestModels data={data} />
-      <div className="icon-container">
-        <button className="add-car-button" onClick={() => setIsModalOpen(true)}>
-          <FaPlusCircle size={30} />
-        </button>
-      </div>
-      <AddCarModal
-        isOpen={isModalOpen}
-        onRequestClose={() => setIsModalOpen(false)}
-        newCar={newCar}
-        handleChange={handleChange}
-        handleAdd={handleAdd}
-      />
+        <BestModels/>
+        {/* sort dropdown */}
       <div className="sort-dropdown">
         <label htmlFor="sort-by">Sort by:</label>
         <select id="sort-by" onChange={handleSortChange}>
@@ -199,6 +243,7 @@ const CsvReader = () => {
             ))}
         </select>
       </div>
+      {/* states dropdown */}
       <div className="state-dropdown">
         <label htmlFor="state-select">Select State:</label>
         <select id="state-select" onChange={handleStateChange} value={selectedState}>
@@ -210,6 +255,18 @@ const CsvReader = () => {
           ))}
         </select>
       </div>
+       <div className="icon-container">
+        <button className="add-car-button" onClick={() => setIsModalOpen(true)}>
+          <FaPlusCircle size={30} />
+        </button>
+      </div>
+      <AddCarModal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        newCar={newCar}
+        handleChange={handleChange}
+        handleAdd={handleAdd}
+      />
       <table {...getTableProps()} className="data-table">
         <thead>
           {headerGroups.map(headerGroup => (
@@ -217,11 +274,13 @@ const CsvReader = () => {
               {headerGroup.headers.map(column => (
                 <th {...column.getHeaderProps(column.getSortByToggleProps())}>
                   {column.render('Header')}
-                  {!column.disableSortBy && (column.isSorted
-                    ? column.isSortedDesc
-                      ? ' 🔽'
-                      : ' 🔼'
-                    : '')}
+                  <span>
+                    {column.isSorted
+                      ? column.isSortedDesc
+                        ? ' 🔽'
+                        : ' 🔼'
+                      : ''}
+                  </span>
                 </th>
               ))}
             </tr>

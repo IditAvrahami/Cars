@@ -1,4 +1,4 @@
-// src/components/AddCarModal.js
+import './AddCarModal.css';
 import React from 'react';
 import Modal from 'react-modal';
 
@@ -9,66 +9,69 @@ const AddCarModal = ({ isOpen, onRequestClose, newCar, handleChange, handleAdd }
     <Modal
       isOpen={isOpen}
       onRequestClose={onRequestClose}
-      contentLabel="Add New Car"
+      contentLabel={newCar.id ? 'Edit Car' : 'Add Car'}
       className="Modal"
       overlayClassName="Overlay"
     >
+      <h2>{newCar.id ? 'Edit Car' : 'Add Car'}</h2>
       <div className="form-container">
-        <h3>Add New Car</h3>
-        <form>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleAdd();
+        }}>
           <input
             type="text"
-            name="Battery"
-            value={newCar.Battery}
+            name="battery"
+            value={newCar.battery}
             onChange={handleChange}
             placeholder="Battery"
           />
           <input
             type="text"
-            name="Car_name"
-            value={newCar.Car_name}
+            name="car_name"
+            value={newCar.car_name}
             onChange={handleChange}
             placeholder="Car Name"
           />
           <input
             type="text"
-            name="Car_name_link"
-            value={newCar.Car_name_link}
+            name="car_name_link"
+            value={newCar.car_name_link}
             onChange={handleChange}
             placeholder="Car Name Link"
           />
           <input
             type="text"
-            name="Efficiency"
-            value={newCar.Efficiency}
+            name="efficiency"
+            value={newCar.efficiency}
             onChange={handleChange}
             placeholder="Efficiency"
           />
           <input
             type="text"
-            name="Fast_charge"
-            value={newCar.Fast_charge}
+            name="fast_charge"
+            value={newCar.fast_charge}
             onChange={handleChange}
             placeholder="Fast Charge"
           />
           <input
             type="text"
-            name="Price"
-            value={newCar.Price}
+            name="price"
+            value={newCar.price}
             onChange={handleChange}
             placeholder="Price"
           />
           <input
             type="text"
-            name="Range"
-            value={newCar.Range}
+            name="range"
+            value={newCar.range}
             onChange={handleChange}
             placeholder="Range"
           />
           <input
             type="text"
-            name="Top_speed"
-            value={newCar.Top_speed}
+            name="top_speed"
+            value={newCar.top_speed}
             onChange={handleChange}
             placeholder="Top Speed"
           />
@@ -79,10 +82,9 @@ const AddCarModal = ({ isOpen, onRequestClose, newCar, handleChange, handleAdd }
             onChange={handleChange}
             placeholder="Acceleration (0-100)"
           />
-          <button type="button" onClick={handleAdd}>
-            Add Car
-          </button>
+          <button type="submit">{newCar.id ? 'Update' : 'Add'}</button>
         </form>
+        <button onClick={onRequestClose}>Close</button>
       </div>
     </Modal>
   );
