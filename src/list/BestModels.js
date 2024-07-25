@@ -43,50 +43,50 @@ const BestModels = () => {
     fetchData();
   }, []);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>טוען...</p>;
   if (error) return <p>Error fetching data: {error.message}</p>;
 
   return (
     <div className="best-models">
-      <h2>Best Models</h2>
+      <h2>הדגמים הטובים ביותר</h2>
       <div className="best-model">
-        <h3>Fastest</h3>
+        <h3>המהיר ביותר</h3>
         {bestModels.fastest ? (
           <p>{bestModels.fastest.car_name} ({bestModels.fastest.top_speed} km/h)</p>
         ) : (
-          <p>No data available</p>
+          <p>מידע לא זמין</p>
         )}
       </div>
       <div className="best-model">
-        <h3>Agile (Fastest Acceleration)</h3>
+        <h3>האצה המהירה ביותר</h3>
         {bestModels.agile ? (
           <p>{bestModels.agile.car_name} ({bestModels.agile.acceleration} sec 0-100 km/h)</p>
         ) : (
-          <p>No data available</p>
+          <p>מידע לא זמין</p>
         )}
       </div>
       <div className="best-model">
-        <h3>Most Efficient</h3>
+        <h3>היעיל ביותר</h3>
         {bestModels.efficient ? (
           <p>{bestModels.efficient.car_name} ({bestModels.efficient.efficiency} kWh/100 km)</p>
         ) : (
-          <p>No data available</p>
+          <p>מידע לא זמין</p>
         )}
       </div>
       <div className="best-model">
-        <h3>Longest Range</h3>
+        <h3>הטווח הארוך ביותר</h3>
         {bestModels.range ? (
           <p>{bestModels.range.car_name} ({bestModels.range.range} km)</p>
         ) : (
-          <p>No data available</p>
+          <p>מידע לא זמין</p>
         )}
       </div>
       <div className="best-model">
-        <h3>Largest Battery Volume</h3>
+        <h3>נפח הסוללה הגדול ביותר</h3>
         {bestModels.battery ? (
           <p>{bestModels.battery.car_name} ({bestModels.battery.battery} kWh)</p>
         ) : (
-          <p>No data available</p>
+          <p>מידע לא זמין</p>
         )}
       </div>
     </div>
@@ -94,53 +94,3 @@ const BestModels = () => {
 };
 
 export default BestModels;
-
-
-// import React from 'react';
-// import Card from './Card';
-
-// const getBestModels = (data) => {
-//   if (data.length === 0) return {};
-
-//   return {
-//     fastest: data.reduce((prev, curr) => (prev.top_speed > curr.top_speed ? prev : curr), data[0]),
-//     agile: data.reduce((prev, curr) => (prev.acceleration < curr.acceleration ? prev : curr), data[0]),
-//     efficient: data.reduce((prev, curr) => (prev.efficiency > curr.efficiency ? prev : curr), data[0]), 
-//     range: data.reduce((prev, curr) => (prev.range > curr.range ? prev : curr), data[0]),
-//     battery: data.reduce((prev, curr) => (prev.battery > curr.battery ? prev : curr), data[0]),
-//   };
-// };
-
-// const BestModels = ({ data }) => {
-//   if (!data || data.length === 0) return null;
-
-//   const bestModels = getBestModels(data);
-
-//   return (
-//     <div className="best-models">
-//       <h2>Best Models</h2>
-//       <div className="best-model">
-//         <h3>Fastest</h3>
-//         <p>{bestModels.fastest.car_name} ({bestModels.fastest.top_speed} km/h)</p>
-//       </div>
-//       <div className="best-model">
-//         <h3>Agile (Fastest Acceleration)</h3>
-//         <p>{bestModels.agile.car_name} ({bestModels.agile.acceleration} sec 0-100 km/h)</p>
-//       </div>
-//       <div className="best-model">
-//         <h3>Most Efficient</h3>
-//         <p>{bestModels.efficient.car_name} ({bestModels.efficient.efficiency} kWh/100 km)</p>
-//       </div>
-//       <div className="best-model">
-//         <h3>Longest Range</h3>
-//         <p>{bestModels.range.car_name} ({bestModels.range.range} km)</p>
-//       </div>
-//       <div className="best-model">
-//         <h3>Largest Battery Volume</h3>
-//         <p>{bestModels.battery.car_name} ({bestModels.battery.battery} kWh)</p>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default BestModels;

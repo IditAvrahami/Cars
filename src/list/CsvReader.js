@@ -68,7 +68,7 @@ const CsvReader = () => {
         const carData = await carResponse.json();
         console.log('Car data:', carData); // Debugging line
 
-        // Fetch exchange rate
+        // Fetch exchange rate HTTP GET request
         const exchangeRateResponse = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
         const exchangeRateData = await exchangeRateResponse.json();
         const exchangeRate = exchangeRateData.rates.ILS;
@@ -112,7 +112,7 @@ const CsvReader = () => {
       { Header: 'יעילות', accessor: 'efficiency' },
       { Header: 'חיי סוללה', accessor: 'battery' },
       { Header: 'מחיר (בשקל)', accessor: 'PriceShekels' },
-      { Header: 'מחיר (אירו)', accessor: 'price' },
+      { Header: 'מחיר (באירו)', accessor: 'price' },
       {
         Header: 'קישור',
         accessor: 'car_name_link',
@@ -146,7 +146,8 @@ const handleAdd = async () => {
     try {
       const method = newCar.id ? 'PUT' : 'POST'; // Determine if it's an update or add
       const url = newCar.id ? `http://localhost:5000/api/cars/${newCar.id}` : 'http://localhost:5000/api/cars';
-      
+      console.log("method: ", method)
+      console.log("url: ", url)
       const response = await fetch(url, {
         method,
         headers: {
@@ -231,9 +232,9 @@ const handleDelete = async (id) => {
         <BestModels/>
         {/* sort dropdown */}
       <div className="sort-dropdown">
-        <label htmlFor="sort-by">Sort by:</label>
+        <label htmlFor="sort-by">סינון לפי</label>
         <select id="sort-by" onChange={handleSortChange}>
-          <option value="">Select Column</option>
+          <option value="">בחר נושא</option>
           {columns
             .filter(column => !column.disableSortBy)
             .map(column => (
@@ -245,9 +246,9 @@ const handleDelete = async (id) => {
       </div>
       {/* states dropdown */}
       <div className="state-dropdown">
-        <label htmlFor="state-select">Select State:</label>
+        <label htmlFor="state-select">שם מדינה</label>
         <select id="state-select" onChange={handleStateChange} value={selectedState}>
-          <option value="">Select State</option>
+          <option value="">בחר מדינה</option>
           {stateOptions.map(state => (
             <option key={state} value={state}>
               {state}
